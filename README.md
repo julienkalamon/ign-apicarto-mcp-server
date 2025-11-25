@@ -49,7 +49,7 @@ Il expose les principales API de l'écosystème IGN API Carto, permettant d'inte
 | `ign_get_rpg` | Interroger le Registre Parcellaire Graphique | Analyse agricole, environnement |
 | `ign_get_nature_areas` | Espaces naturels protégés (Natura 2000, ZNIEFF, parcs) | Études environnementales, biodiversité |
 | `ign_get_gpu_urbanisme` | Données d'urbanisme du Géoportail de l'Urbanisme | Vérification PLU, constructibilité |
-| `ign_get_aoc_viticoles` | Zones d'appellations viticoles (AOC, IGP, VSIG) | Viticulture, géomarketing |
+| `ign_get_aoc_viticoles` | Zones d'appellations viticoles (AOC, IGP, VSIG) | Viticulture, géomarketing | **Clé API requise** |
 | `ign_wfs_geoportail` | Accès générique aux flux WFS du Géoportail | Données géographiques diverses |
 | `ign_get_administrative_limits` | Limites administratives (communes, départements, régions) | Découpage territorial, statistiques |
 
@@ -74,7 +74,21 @@ cd ign-apicarto-mcp-server
 npm install
 ```
 
-### 3. Compiler le projet
+### 3. Configurer les variables d'environnement
+
+```bash
+# Copier le fichier d'exemple
+cp .env.example .env.local
+```
+
+Éditez `.env.local` et ajoutez votre clé API IGN si vous souhaitez utiliser l'endpoint AOC viticoles :
+
+```bash
+# Obtenir une clé gratuite : https://geoservices.ign.fr/
+IGN_API_KEY=votre_cle_api
+```
+
+### 4. Compiler le projet
 
 ```bash
 npm run build
@@ -332,9 +346,19 @@ Pour une utilisation en réseau ou depuis un client distant :
 TRANSPORT=http PORT=3000 npm start
 ```
 
-Variables d'environnement disponibles :
-- `TRANSPORT` : `stdio` (défaut) ou `http`
-- `PORT` : Port HTTP (défaut : `3000`)
+### Variables d'environnement
+
+Configurez le serveur via le fichier `.env.local` ou directement en ligne de commande :
+
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `TRANSPORT` | Mode de transport (`stdio` ou `http`) | `stdio` |
+| `PORT` | Port HTTP (mode HTTP uniquement) | `3000` |
+| `IGN_API_KEY` | Clé API IGN pour l'endpoint AOC viticoles | - |
+
+**Fichiers de configuration :**
+- `.env.example` : Template avec toutes les variables disponibles
+- `.env.local` : Votre configuration locale (non versionné)
 
 ## Utilisation
 
@@ -475,6 +499,9 @@ Géométrie : {"type":"Point","coordinates":[2.35,45.85]}
 
 ### 6. Appellations viticoles
 
+> **Note :** Cet endpoint nécessite une clé API IGN gratuite.
+> Obtenez-la sur [geoservices.ign.fr](https://geoservices.ign.fr/)
+
 **Question :**
 ```
 Cette parcelle est-elle située dans une AOC viticole ?
@@ -484,10 +511,16 @@ Coordonnées : {"type":"Point","coordinates":[4.84,45.76]}
 **Informations retournées :**
 - Type d'appellation (AOC, IGP, VSIG)
 - Nom de l'appellation
-- Couleur de vin (rouge, blanc, rosé)
-- Organisme certificateur
+- Identifiant de l'appellation
+- Géométrie de la zone
 
 **Outil utilisé :** `ign_get_aoc_viticoles`
+
+**Configuration requise :**
+```bash
+# Dans .env.local
+IGN_API_KEY=votre_cle_api
+```
 
 ---
 
@@ -560,11 +593,15 @@ Les géométries doivent être au format GeoJSON en WGS84 (EPSG:4326) :
 ign-apicarto-mcp-server/
 ├── src/
 │   ├── index.ts          # Point d'entrée du serveur MCP
-│   ├── tools/            # Définition des outils MCP
-│   └── types/            # Types TypeScript
+│   ├── api-client.ts     # Client HTTP pour l'API IGN
+│   └── types.ts          # Types TypeScript
 ├── dist/                 # Fichiers compilés
+├── .env.example          # Template des variables d'environnement
+├── .env.local            # Configuration locale (non versionné)
+├── .gitignore
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── README.md
 ```
 
 ### Scripts disponibles

@@ -43,11 +43,20 @@ export async function apiRequest<T>(
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
-      throw new ApiCartoError(
-        `API request failed: ${response.status} ${response.statusText}`,
-        response.status,
-        errorText
-      );
+      let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+
+      // Add helpful context based on status code
+      if (response.status === 404) {
+        errorMessage += "\n\nThis endpoint may not exist or the requested resource was not found.";
+      } else if (response.status === 400) {
+        errorMessage += "\n\nThe request parameters may be invalid. Check the geometry format and required parameters.";
+      } else if (response.status === 403) {
+        errorMessage += "\n\nAccess denied. This endpoint may require an API key.";
+      } else if (response.status === 500) {
+        errorMessage += "\n\nThe IGN server encountered an internal error. Try again later or simplify your request.";
+      }
+
+      throw new ApiCartoError(errorMessage, response.status, errorText);
     }
 
     const data = await response.json() as T;

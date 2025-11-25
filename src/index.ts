@@ -513,8 +513,8 @@ This tool accesses wine appellation data maintained by FranceAgriMer based on IN
 
 Args:
   - geom (string): GeoJSON geometry to intersect (required)
-  - _limit (number): Max results
-  - _start (number): Pagination offset
+  - apikey (string, optional): IGN API key (required for this endpoint, get one at https://geoservices.ign.fr/)
+  - source (string): Data source - 'prd' (production) or 'qlf' (qualification). Default: 'prd'
 
 Returns:
   GeoJSON FeatureCollection with appellation zones including:
@@ -523,11 +523,14 @@ Returns:
   - type: AOC/IGP/VSIG
 
 Examples:
-  - "What wine appellations cover this vineyard?" -> geom={"type":"Point",...}
-  - "Find AOC zones in Bordeaux region" -> geom={"type":"Polygon",...}`,
+  - "What wine appellations cover this vineyard?" -> geom={"type":"Point",...}, apikey="your-key"
+  - "Find AOC zones in Bordeaux region" -> geom={"type":"Polygon",...}, apikey="your-key"
+
+Note: This endpoint requires an IGN API key. Get one for free at https://geoservices.ign.fr/`,
     inputSchema: z.object({
       geom: GeometrySchema.describe("GeoJSON geometry (required)"),
-      ...PaginationSchema,
+      apikey: z.string().optional().describe("IGN API key (required - get one at https://geoservices.ign.fr/)"),
+      source: z.enum(["prd", "qlf"] as const).default("prd").describe("Data source: 'prd' (production) or 'qlf' (qualification)"),
       response_format: ResponseFormatSchema,
     }).strict(),
     annotations: {
@@ -538,10 +541,21 @@ Examples:
     },
   },
   async (params) => {
-    const { response_format, ...queryParams } = params;
-    
+    const { response_format, geom, apikey, source } = params;
+
+    if (!apikey) {
+      return {
+        content: [{
+          type: "text",
+          text: "Error: This endpoint requires an IGN API key. Get one for free at https://geoservices.ign.fr/\n\nOnce you have a key, provide it via the 'apikey' parameter."
+        }],
+        isError: true,
+      };
+    }
+
     const data = await apiRequest<unknown>("/aoc/appellation-viticole", {
-      params: queryParams as Record<string, string | number | boolean | undefined>,
+      method: "POST",
+      params: { geom, apikey, source },
     });
 
     if (response_format === ResponseFormat.JSON) {
@@ -570,24 +584,25 @@ server.registerTool(
     title: "Query WFS Geoportail layers",
     description: `Generic query interface for Geoportail WFS layers.
 
-This tool provides access to various WFS layers from the IGN Geoportail. It's a beta feature that allows querying any WFS layer by intersection with a geometry.
+This tool provides access to various WFS layers from the IGN Geoportail. It allows querying any WFS layer by intersection with a geometry.
 
 Args:
-  - layer (string): WFS layer name (e.g., "BDTOPO_V3:commune", "LIMITES_ADMINISTRATIVES_EXPRESS.LATEST:commune")
-  - geom (string): GeoJSON geometry to intersect (required)
-  - _limit (number): Max results
+  - source (string): WFS data source name (e.g., "BDTOPO_V3:commune", "LIMITES_ADMINISTRATIVES_EXPRESS.LATEST:commune")
+  - geom (string): GeoJSON geometry to intersect (required, in WGS84/EPSG:4326)
+  - _limit (number): Max results (1-1000)
   - _start (number): Pagination offset
 
 Returns:
   GeoJSON FeatureCollection with features from the requested layer.
 
-Note: This is a beta feature. Only WGS84 (EPSG:4326) layers are supported.
+Note: Only WGS84 (EPSG:4326) geometries are supported.
 
 Examples:
-  - "Get BDTOPO communes at this point" -> layer="BDTOPO_V3:commune", geom=...`,
+  - "Get BDTOPO communes at this point" -> source="BDTOPO_V3:commune", geom={"type":"Point","coordinates":[2.35,48.85]}
+  - "Find buildings in this area" -> source="BDTOPO_V3:batiment", geom=...`,
     inputSchema: z.object({
-      layer: z.string().describe("WFS layer name"),
-      geom: GeometrySchema.describe("GeoJSON geometry (required)"),
+      source: z.string().describe("WFS data source name (e.g., 'BDTOPO_V3:commune')"),
+      geom: GeometrySchema.describe("GeoJSON geometry (required, in WGS84/EPSG:4326)"),
       ...PaginationSchema,
       response_format: ResponseFormatSchema,
     }).strict(),
@@ -599,12 +614,12 @@ Examples:
     },
   },
   async (params) => {
-    const { layer, response_format, ...queryParams } = params;
-    
+    const { source, response_format, ...queryParams } = params;
+
     const data = await apiRequest<unknown>("/wfs-geoportail/search", {
-      params: { 
-        typeName: layer,
-        ...queryParams 
+      params: {
+        source,
+        ...queryParams
       } as Record<string, string | number | boolean | undefined>,
     });
 
@@ -616,7 +631,7 @@ Examples:
 
     const markdown = formatGeoJSONToMarkdown(
       data as import("./types.js").GeoJSONFeatureCollection,
-      `WFS Geoportail - ${layer}`
+      `WFS Geoportail - ${source}`
     );
     return {
       content: [{ type: "text", text: truncateResponse(markdown, CHARACTER_LIMIT) }],
@@ -634,28 +649,32 @@ server.registerTool(
     title: "Get administrative boundaries",
     description: `Query French administrative boundaries (communes, departments, regions).
 
-This tool accesses administrative limit data from the IGN.
+This tool accesses administrative limit data from the IGN Admin Express dataset.
 
 Args:
   - type (string): Boundary type - 'commune', 'departement', or 'region'
   - geom (string, optional): GeoJSON geometry to intersect
-  - code (string, optional): Administrative code (INSEE code for communes, department number, region code)
-  - _limit (number): Max results
+  - lon (number, optional): Longitude coordinate (use with lat)
+  - lat (number, optional): Latitude coordinate (use with lon)
+  - _limit (number): Max results (1-1000)
   - _start (number): Pagination offset
+
+Note: Either provide geom OR (lon + lat), but not both.
 
 Returns:
   GeoJSON FeatureCollection with administrative boundaries.
 
 Examples:
-  - "Get Paris commune boundary" -> type="commune", code="75056"
-  - "What department is at this point?" -> type="departement", geom=...
-  - "Get all regions" -> type="region"`,
+  - "What commune is at this point?" -> type="commune", lon=2.35, lat=48.85
+  - "What department is at this point?" -> type="departement", geom={"type":"Point",...}
+  - "Get regions intersecting this polygon" -> type="region", geom=...`,
     inputSchema: z.object({
       type: z
         .enum(["commune", "departement", "region"] as const)
         .describe("Administrative boundary type"),
       geom: GeometrySchema.optional(),
-      code: z.string().optional().describe("Administrative code"),
+      lon: z.number().optional().describe("Longitude coordinate (use with lat)"),
+      lat: z.number().optional().describe("Latitude coordinate (use with lon)"),
       ...PaginationSchema,
       response_format: ResponseFormatSchema,
     }).strict(),
@@ -668,8 +687,8 @@ Examples:
   },
   async (params) => {
     const { type, response_format, ...queryParams } = params;
-    const endpoint = `/cog/${type}`;
-    
+    const endpoint = `/limites-administratives/${type}`;
+
     const data = await apiRequest<unknown>(endpoint, {
       params: queryParams as Record<string, string | number | boolean | undefined>,
     });
