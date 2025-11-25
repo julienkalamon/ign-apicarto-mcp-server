@@ -241,6 +241,51 @@ OpenAI Codex CLI supporte également le protocole MCP via un fichier de configur
 </details>
 
 <details>
+<summary><strong>🚀 Google Antigravity</strong></summary>
+
+### Configuration Google Antigravity
+
+[Google Antigravity](https://developers.googleblog.com/en/build-with-google-antigravity-our-new-agentic-development-platform/) est la plateforme de développement agentique de Google, disponible gratuitement en preview publique.
+
+**Accéder à la configuration MCP :**
+
+1. Cliquez sur **Agent session** dans le panneau latéral
+2. Sélectionnez le menu **"..."** en haut du panneau
+3. Cliquez sur **MCP Servers** → **Manage MCP Servers**
+4. Sélectionnez **View raw config** pour éditer `mcp_config.json`
+
+**Configuration :**
+
+```json
+{
+  "mcpServers": {
+    "ign-apicarto": {
+      "command": "node",
+      "args": ["/chemin/absolu/vers/ign-apicarto-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Mode HTTP (alternatif) :**
+
+Antigravity supporte également les serveurs MCP via HTTP/SSE :
+
+```json
+{
+  "mcpServers": {
+    "ign-apicarto": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+**Note :** Antigravity limite le nombre total d'outils actifs. Si vous utilisez plusieurs serveurs MCP, gardez le total sous 50 outils pour des performances optimales.
+
+</details>
+
+<details>
 <summary><strong>🔧 Autres clients MCP</strong></summary>
 
 ### Configuration générique
