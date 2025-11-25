@@ -84,14 +84,21 @@ Le serveur compilé sera disponible dans le dossier `dist/`.
 
 ## Configuration
 
+Configurez ce serveur MCP avec votre client IA préféré. Cliquez sur le client que vous utilisez pour voir les instructions détaillées.
+
+<details>
+<summary><strong>🖥️ Claude Desktop</strong></summary>
+
 ### Configuration Claude Desktop
 
-Pour utiliser ce serveur avec Claude Desktop, ajoutez la configuration suivante à votre fichier `claude_desktop_config.json` :
+Ajoutez la configuration suivante à votre fichier `claude_desktop_config.json` :
 
 **Emplacement du fichier :**
-- macOS : `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows : `%APPDATA%\Claude\claude_desktop_config.json`
-- Linux : `~/.config/Claude/claude_desktop_config.json`
+| Système | Chemin |
+|---------|--------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
 
 **Configuration :**
 
@@ -107,6 +114,158 @@ Pour utiliser ce serveur avec Claude Desktop, ajoutez la configuration suivante 
 ```
 
 ⚠️ **Important** : Remplacez `/chemin/absolu/vers/` par le chemin complet vers votre installation.
+
+</details>
+
+<details>
+<summary><strong>⌨️ Claude Code (CLI)</strong></summary>
+
+### Configuration Claude Code
+
+Claude Code utilise un fichier `.mcp.json` pour la configuration des serveurs MCP.
+
+**Configuration projet (recommandée) :**
+
+Créez un fichier `.mcp.json` à la racine de votre projet :
+
+```json
+{
+  "mcpServers": {
+    "ign-apicarto": {
+      "command": "node",
+      "args": ["/chemin/absolu/vers/ign-apicarto-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Configuration globale :**
+
+Pour une utilisation dans tous vos projets, créez le fichier dans `~/.claude/.mcp.json`.
+
+**Activer le serveur :**
+
+Au premier lancement, Claude Code vous demandera d'approuver le serveur. Vous pouvez aussi l'activer automatiquement en ajoutant dans vos settings :
+
+```json
+{
+  "enableAllProjectMcpServers": true
+}
+```
+
+Ou spécifiquement :
+
+```json
+{
+  "enabledMcpjsonServers": ["ign-apicarto"]
+}
+```
+
+</details>
+
+<details>
+<summary><strong>📝 Cursor</strong></summary>
+
+### Configuration Cursor
+
+Cursor utilise un fichier `mcp.json` pour la configuration MCP.
+
+**Emplacement du fichier :**
+| Portée | Chemin |
+|--------|--------|
+| Projet | `.cursor/mcp.json` (à la racine du projet) |
+| Global | `~/.cursor/mcp.json` |
+
+**Configuration :**
+
+```json
+{
+  "mcpServers": {
+    "ign-apicarto": {
+      "command": "node",
+      "args": ["/chemin/absolu/vers/ign-apicarto-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Avec variables d'environnement (optionnel) :**
+
+```json
+{
+  "mcpServers": {
+    "ign-apicarto": {
+      "command": "node",
+      "args": ["${workspaceFolder}/ign-apicarto-mcp-server/dist/index.js"],
+      "env": {}
+    }
+  }
+}
+```
+
+**Activer le serveur :**
+
+1. Ouvrez les paramètres de Cursor (`Cmd/Ctrl + ,`)
+2. Recherchez "MCP"
+3. Activez les serveurs MCP
+4. Redémarrez Cursor
+
+</details>
+
+<details>
+<summary><strong>🤖 OpenAI Codex CLI</strong></summary>
+
+### Configuration Codex CLI
+
+OpenAI Codex CLI supporte également le protocole MCP via un fichier de configuration.
+
+**Emplacement du fichier :**
+
+`~/.codex/mcp.json`
+
+**Configuration :**
+
+```json
+{
+  "mcpServers": {
+    "ign-apicarto": {
+      "command": "node",
+      "args": ["/chemin/absolu/vers/ign-apicarto-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Note :** Assurez-vous que Codex CLI est configuré pour utiliser les serveurs MCP. Consultez la [documentation officielle Codex](https://github.com/openai/codex) pour plus de détails sur l'activation des plugins MCP.
+
+</details>
+
+<details>
+<summary><strong>🔧 Autres clients MCP</strong></summary>
+
+### Configuration générique
+
+Ce serveur MCP est compatible avec tout client supportant le protocole MCP en mode **stdio**.
+
+**Paramètres de connexion :**
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Transport | `stdio` |
+| Commande | `node` |
+| Arguments | `["/chemin/vers/dist/index.js"]` |
+
+**Mode HTTP (alternatif) :**
+
+Pour les clients supportant HTTP/SSE, lancez le serveur en mode HTTP :
+
+```bash
+TRANSPORT=http PORT=3000 npm start
+```
+
+Puis configurez votre client avec l'URL : `http://localhost:3000/mcp`
+
+</details>
 
 ### Modes de transport
 
